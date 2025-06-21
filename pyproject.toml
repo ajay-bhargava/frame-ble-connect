@@ -1,0 +1,37 @@
+[project]
+name = "connect"
+version = "0.1.0"
+description = "This is the low level library to connect to the frame glasses."
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [
+    { name = "Ajay Bhargava", email = "bhargava.ajay@gmail.com" }
+]
+dependencies = [
+    "bleak>=0.22.3",
+    "frame-ble>=1.1.1",
+    "frame-msg>=5.2.1",
+    "numpy>=2.3.1",
+    "opencv-python>=4.11.0.86",
+    "opencv-python-headless>=4.11.0.86",
+    "pillow>=11.2.1",
+    "pytest",
+]
+
+[build-system]
+requires = ["setuptools>=42.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["connect"]
+package-dir = {"connect" = "src/connect"}
+
+[tool.ruff]
+src = ["src"]
+line-length = 100
+select = ["E", "F", "B", "I"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["__test__"]
+addopts = "-ra -q"
