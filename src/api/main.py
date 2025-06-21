@@ -8,7 +8,7 @@ import sys
 from dotenv import load_dotenv
 from pathlib import Path
 
-from .routes import analysis, device
+from .routes import analysis, device, parking
 
 # Load environment variables
 load_dotenv()
@@ -40,6 +40,7 @@ if static_dir.exists():
 # Include routers
 app.include_router(analysis.router, prefix="/api/v1")
 app.include_router(device.router, prefix="/api/v1")
+app.include_router(parking.router, prefix="/api/v1")
 
 @app.get("/")
 async def root():
@@ -50,7 +51,8 @@ async def root():
         "docs": "/docs",
         "endpoints": {
             "analysis": "/api/v1/analysis",
-            "device": "/api/v1/device"
+            "device": "/api/v1/device",
+            "parking": "/api/v1/parking"
         }
     }
 
