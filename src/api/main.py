@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 import os
+import sys
 from dotenv import load_dotenv
 from pathlib import Path
 
@@ -72,18 +73,33 @@ async def global_exception_handler(request, exc):
         }
     )
 
-if __name__ == "__main__":
-    # Get port from environment or default to 8000
+def start_server():
+    """Start the FastAPI server with configuration"""
+    # Get configuration from environment
     port = int(os.getenv("PORT", 8000))
     host = os.getenv("HOST", "0.0.0.0")
+    reload = os.getenv("RELOAD", "true").lower() == "true"
     
-    print(f"Starting Frame Glasses AI API on {host}:{port}")
-    print(f"API Documentation: http://{host}:{port}/docs")
+    print("🚀 Starting Frame Glasses AI API")
+    print(f"📍 Host: {host}")
+    print(f"🔌 Port: {port}")
+    print(f"📚 API Docs: http://{host}:{port}/docs")
+    print(f"🔄 Auto-reload: {reload}")
+    print("-" * 50)
     
+    # Check for required environment variables
+    if not os.getenv("MOONDREAM_API_KEY"):
+        print("⚠️  Warning: MOONDREAM_API_KEY not set")
+        print("   Set it in your .env file or environment")
+    
+    # Start the server
     uvicorn.run(
         "src.api.main:app",
         host=host,
         port=port,
-        reload=True,
+        reload=reload,
         log_level="info"
-    ) 
+    )
+
+if __name__ == "__main__":
+    start_server() 

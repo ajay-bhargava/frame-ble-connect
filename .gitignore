@@ -94,3 +94,5 @@ Desktop.ini
 
 # Ignore captured images
 captured_frame.jpg*.jpg
+static/images/*.jpg
+test_image.jpg

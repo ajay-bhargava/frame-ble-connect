@@ -101,8 +101,10 @@ LOG_LEVEL=info
 source .venv/bin/activate  # On macOS/Linux
 # .venv\Scripts\activate   # On Windows
 
-# Start the server
-python start_api.py
+# Start the server (choose one method)
+python run.py              # From root directory
+# OR
+python src/api/main.py     # Direct from source
 ```
 
 The API will be available at:
@@ -144,7 +146,7 @@ print(f"Maps: {result['maps_link']}")
 #### Deploy to Modal
 ```bash
 # Deploy the Modal-based API (requires Modal account)
-modal deploy src/api/api.py
+modal deploy src/api/modal_app.py
 ```
 
 #### Use Modal API
@@ -199,60 +201,53 @@ The restaurant service includes data for common NYC restaurants:
 
 For other food items, a generic search is performed.
 
-## 🏗️ Project Structure
+## 📁 Project Structure
 
 ```
 frame-ble-connect/
+├── run.py                    # 🚀 Main entry point
 ├── src/
-│   ├── api/                    # FastAPI servers
-│   │   ├── main.py            # Local FastAPI server
-│   │   ├── api.py             # Modal FastAPI server
-│   │   ├── routes/            # API endpoints
-│   │   │   ├── analysis.py    # AI analysis & restaurant routes
-│   │   │   └── device.py      # Device management routes
-│   │   ├── models/            # Pydantic models
-│   │   │   ├── requests.py    # Request models
-│   │   │   └── responses.py   # Response models
-│   │   └── services/          # Business logic
-│   │       ├── frame_service.py # Frame glasses service
-│   │       └── restaurant_service.py # Restaurant search service
-│   ├── ai/                    # AI processing
-│   │   └── processors/
-│   │       └── moondream_processor.py # Moondream AI integration
-│   ├── connect/               # Original Frame connection code
-│   │   ├── main.py            # Live camera feed
-│   │   ├── single_capture.py  # Single photo capture
-│   │   └── lua/               # Lua scripts for Frame hardware
-│   └── utils/                 # Shared utilities
-├── start_api.py              # API startup script
-├── env.example               # Environment configuration example
-├── test_api.py               # API structure tests
-├── test_restaurant.py        # Restaurant functionality tests
-└── README.md                # This file
+│   ├── api/
+│   │   ├── main.py          # 🏗️ FastAPI application
+│   │   ├── routes/          # 🛣️ API endpoints
+│   │   ├── models/          # 📋 Data models
+│   │   └── services/        # 🔧 Business logic
+│   ├── ai/
+│   │   └── processors/      # 🤖 AI processing
+│   ├── connect/             # 📱 Frame glasses connection
+│   └── utils/               # 🛠️ Utilities
+├── static/
+│   └── images/              # 📸 Captured images
+├── .env                     # ⚙️ Environment variables
+└── README.md               # 📖 Documentation
 ```
 
 ## 🔧 Development
 
-### Running Tests
+### Running the Server
 ```bash
-# Test API structure
+# Development mode (with auto-reload)
+python run.py
+
+# Production mode
+RELOAD=false python run.py
+```
+
+### Testing
+```bash
+# Test API endpoints
 python test_api.py
 
-# Test restaurant functionality
+# Test restaurant service
 python test_restaurant.py
-
-# Run all tests
-uv run pytest
 ```
 
-### Code Quality
-```bash
-# Format code
-ruff format src/
-
-# Lint code
-ruff check src/
-```
+### Code Structure
+- **`run.py`**: Simple entry point for starting the server
+- **`src/api/main.py`**: FastAPI application with all routes and middleware
+- **`src/api/routes/`**: API endpoint definitions
+- **`src/ai/processors/`**: AI processing logic (Moondream integration)
+- **`src/connect/`**: Frame glasses BLE connection and camera control
 
 ## 🚨 Troubleshooting
 
@@ -267,7 +262,7 @@ ruff check src/
 
 ### Debug Mode
 ```bash
-LOG_LEVEL=debug python start_api.py
+LOG_LEVEL=debug python run.py
 ```
 
 ### Authentication Issues
