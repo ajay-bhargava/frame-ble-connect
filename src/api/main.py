@@ -8,7 +8,7 @@ import sys
 from dotenv import load_dotenv
 from pathlib import Path
 
-from .routes import analysis, device, parking
+from .routes import analysis, device, parking, haptic
 
 # Load environment variables
 load_dotenv()
@@ -16,7 +16,7 @@ load_dotenv()
 # Create FastAPI app
 app = FastAPI(
     title="Frame Glasses AI API",
-    description="AI-powered vision analysis API for Frame glasses",
+    description="AI-powered vision analysis API for Frame glasses with haptic-triggered capture",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc"
@@ -41,6 +41,7 @@ if static_dir.exists():
 app.include_router(analysis.router, prefix="/api/v1")
 app.include_router(device.router, prefix="/api/v1")
 app.include_router(parking.router, prefix="/api/v1")
+app.include_router(haptic.router, prefix="/api/v1")
 
 @app.get("/")
 async def root():
@@ -52,7 +53,8 @@ async def root():
         "endpoints": {
             "analysis": "/api/v1/analysis",
             "device": "/api/v1/device",
-            "parking": "/api/v1/parking"
+            "parking": "/api/v1/parking",
+            "haptic": "/api/v1/haptic"
         }
     }
 
