@@ -1,7 +1,8 @@
 import httpx
 import base64
 import json
-from typing import Dict, Any, Optional
+import re
+from typing import Dict, Any, Optional, List
 from datetime import datetime
 import os
 from dotenv import load_dotenv
@@ -27,21 +28,23 @@ class MoondreamProcessor:
             image_data: JPEG image bytes from the glasses
             
         Returns:
-            Structured food analysis data
+            Structured food analysis data with restaurant recommendations
         """
         # Encode image to base64
         image_b64 = base64.b64encode(image_data).decode('utf-8')
         
-        # Create food analysis prompt
+        # Enhanced food analysis prompt
         prompt = """
-        Analyze this food image and provide detailed information about:
-        1. All visible food items
-        2. Estimated calories for each item
-        3. Key nutrients (protein, carbs, fat, fiber)
-        4. Any dietary restrictions (gluten, dairy, nuts, etc.)
-        5. Portion size estimates
+        Analyze this food image and provide the following information in a clear, structured format:
         
-        Format the response as a structured analysis with clear food item identification.
+        1. **Primary Food Item**: What is the main food item shown? (e.g., "pizza", "sushi", "burger")
+        2. **Additional Items**: Any other food items visible
+        3. **Estimated calories** for the main item
+        4. **Key nutrients** (protein, carbs, fat, fiber)
+        5. **Dietary restrictions** (gluten, dairy, nuts, etc.)
+        
+        Focus on identifying the primary food item clearly for restaurant search purposes.
+        Format your response with clear labels for each section.
         """
         
         try:
@@ -84,6 +87,7 @@ class MoondreamProcessor:
                 "success": True,
                 "raw_response": ai_response,
                 "structured_data": structured_data,
+                "primary_food_item": structured_data.get("primary_food_item", "unknown"),
                 "processing_time_ms": 0,  # TODO: Add timing
                 "timestamp": datetime.now().isoformat()
             }
@@ -163,35 +167,70 @@ class MoondreamProcessor:
         Returns:
             Structured food data
         """
-        # This is a simplified parser - in production you'd want more robust parsing
-        # or use the AI to return structured JSON directly
-        
+        # Enhanced parsing logic
         food_items = []
         total_calories = 0
         dietary_restrictions = []
+        primary_food_item = "unknown"
         
-        # Basic parsing logic (enhance this based on actual AI responses)
-        lines = ai_response.split('\n')
-        current_item = None
+        # Extract primary food item
+        primary_patterns = [
+            r"primary food item[:\s]+([^\n]+)",
+            r"main food item[:\s]+([^\n]+)",
+            r"food item[:\s]+([^\n]+)",
+            r"([a-zA-Z]+)\s+(pizza|sushi|burger|pasta|taco|salad|sandwich|steak|chicken|fish)"
+        ]
         
-        for line in lines:
-            line = line.strip()
-            if not line:
-                continue
-                
-            # Look for food items (this is a simplified approach)
-            if any(keyword in line.lower() for keyword in ['calories', 'protein', 'carbs', 'fat']):
-                if current_item:
-                    food_items.append(current_item)
-                current_item = {"name": line.split()[0], "details": line}
+        for pattern in primary_patterns:
+            match = re.search(pattern, ai_response.lower())
+            if match:
+                primary_food_item = match.group(1).strip()
+                break
         
-        if current_item:
-            food_items.append(current_item)
+        # If no pattern match, try to extract from the first few lines
+        if primary_food_item == "unknown":
+            lines = ai_response.split('\n')
+            for line in lines[:5]:  # Check first 5 lines
+                line = line.strip().lower()
+                if any(food in line for food in ["pizza", "sushi", "burger", "pasta", "taco", "salad", "sandwich", "steak", "chicken", "fish"]):
+                    # Extract the food word
+                    for food in ["pizza", "sushi", "burger", "pasta", "taco", "salad", "sandwich", "steak", "chicken", "fish"]:
+                        if food in line:
+                            primary_food_item = food
+                            break
+                    break
+        
+        # Extract calories
+        calorie_pattern = r"(\d+)\s*calories?"
+        calorie_match = re.search(calorie_pattern, ai_response.lower())
+        if calorie_match:
+            total_calories = int(calorie_match.group(1))
+        
+        # Extract dietary restrictions
+        restriction_keywords = ["gluten", "dairy", "nuts", "vegetarian", "vegan", "halal", "kosher"]
+        for keyword in restriction_keywords:
+            if keyword in ai_response.lower():
+                dietary_restrictions.append(keyword)
+        
+        # Create food item entry
+        if primary_food_item != "unknown":
+            food_items.append({
+                "name": primary_food_item,
+                "confidence": 0.9,
+                "calories": total_calories if total_calories > 0 else None,
+                "nutrients": {
+                    "protein": "varies",
+                    "carbs": "varies", 
+                    "fat": "varies",
+                    "fiber": "varies"
+                }
+            })
         
         return {
             "food_items": food_items,
             "total_calories": total_calories,
             "dietary_restrictions": dietary_restrictions,
+            "primary_food_item": primary_food_item,
             "raw_analysis": ai_response
         }
     

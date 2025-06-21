@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from typing import Optional
 
-from ..models.requests import CaptureRequest
-from ..models.responses import DeviceStatus, CaptureResult
+from src.api.models.requests import CaptureRequest
+from src.api.models.responses import DeviceStatus, CaptureResult
 
 router = APIRouter(prefix="/device", tags=["device"])
 
@@ -12,7 +12,7 @@ async def get_device_status():
     Get current Frame glasses device status
     """
     try:
-        from ..services.frame_service import FrameService
+        from src.api.services.frame_service import FrameService
         
         frame_service = FrameService()
         status = await frame_service.get_status()
@@ -28,7 +28,7 @@ async def connect_device():
     Connect to Frame glasses
     """
     try:
-        from ..services.frame_service import FrameService
+        from src.api.services.frame_service import FrameService
         
         frame_service = FrameService()
         result = await frame_service.connect()
@@ -51,7 +51,7 @@ async def disconnect_device():
     Disconnect from Frame glasses
     """
     try:
-        from ..services.frame_service import FrameService
+        from src.api.services.frame_service import FrameService
         
         frame_service = FrameService()
         await frame_service.disconnect()
@@ -70,7 +70,7 @@ async def capture_image(request: CaptureRequest):
     Capture an image from Frame glasses
     """
     try:
-        from ..services.frame_service import FrameService
+        from src.api.services.frame_service import FrameService
         
         frame_service = FrameService()
         
@@ -106,7 +106,7 @@ async def display_text(text: str):
     Display text on Frame glasses
     """
     try:
-        from ..services.frame_service import FrameService
+        from src.api.services.frame_service import FrameService
         
         frame_service = FrameService()
         
