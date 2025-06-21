@@ -55,7 +55,7 @@ class MoondreamProcessor:
                     "Content-Type": "application/json"
                 },
                 json={
-                    "model": "moondream2",
+                    "model": "moondream-2B",
                     "messages": [
                         {
                             "role": "user",
@@ -120,7 +120,7 @@ class MoondreamProcessor:
                     "Content-Type": "application/json"
                 },
                 json={
-                    "model": "moondream2",
+                    "model": "moondream-2B",
                     "messages": [
                         {
                             "role": "user",
