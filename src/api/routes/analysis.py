@@ -12,15 +12,15 @@ router = APIRouter(prefix="/analysis", tags=["analysis"])
 # Initialize Moondream processor
 moondream_processor = MoondreamProcessor()
 
-@router.post("/food", response_model=FoodAnalysisResult)
-async def analyze_food(
+@router.post("/upload-and-analyze", response_model=FoodAnalysisResult)
+async def upload_and_analyze_food(
     image: UploadFile = File(...),
     custom_prompt: Optional[str] = Form(None)
 ):
     """
-    Analyze food items in the uploaded image using Moondream AI
+    Upload an image and analyze food items using Moondream AI
     """
-    if not image.content_type.startswith('image/'):
+    if not image.content_type or not image.content_type.startswith('image/'):
         raise HTTPException(status_code=400, detail="File must be an image")
     
     try:
@@ -54,15 +54,15 @@ async def analyze_food(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
-@router.post("/food-to-restaurant")
-async def food_to_restaurant(
+@router.post("/upload-and-find-restaurant")
+async def upload_and_find_restaurant(
     image: UploadFile = File(...),
     custom_prompt: Optional[str] = Form(None)
 ):
     """
-    Complete workflow: Analyze food → Find restaurant → Return maps link
+    Complete workflow: Upload image → Analyze food → Find restaurant → Return maps link
     """
-    if not image.content_type.startswith('image/'):
+    if not image.content_type or not image.content_type.startswith('image/'):
         raise HTTPException(status_code=400, detail="File must be an image")
     
     try:
@@ -120,7 +120,7 @@ async def general_analysis(
     """
     Perform general image analysis with custom prompt
     """
-    if not image.content_type.startswith('image/'):
+    if not image.content_type or not image.content_type.startswith('image/'):
         raise HTTPException(status_code=400, detail="File must be an image")
     
     try:
@@ -281,4 +281,25 @@ async def capture_and_find_restaurant(
             await frame_service.disconnect()
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Capture and restaurant search failed: {str(e)}") 
+        raise HTTPException(status_code=500, detail=f"Capture and restaurant search failed: {str(e)}")
+
+# Backward compatibility aliases
+@router.post("/food", response_model=FoodAnalysisResult)
+async def food_alias(
+    image: UploadFile = File(...),
+    custom_prompt: Optional[str] = Form(None)
+):
+    """
+    Alias for /upload-and-analyze - Upload an image and analyze food items
+    """
+    return await upload_and_analyze_food(image, custom_prompt)
+
+@router.post("/food-to-restaurant")
+async def food_to_restaurant_alias(
+    image: UploadFile = File(...),
+    custom_prompt: Optional[str] = Form(None)
+):
+    """
+    Alias for /upload-and-find-restaurant - Upload image → Analyze → Find restaurant
+    """
+    return await upload_and_find_restaurant(image, custom_prompt) 
