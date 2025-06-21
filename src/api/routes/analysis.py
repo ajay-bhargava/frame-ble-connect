@@ -19,8 +19,8 @@ router = APIRouter(prefix="/analysis", tags=["analysis"])
 # Initialize Moondream processor
 moondream_processor = MoondreamProcessor()
 
-@router.post("/upload-and-analyze", response_model=FoodAnalysisResult)
-async def upload_and_analyze_food(
+@router.post("/upload-and-analyze", response_model=AnalysisResult)
+async def upload_and_analyze(
     image: UploadFile = File(...),
     custom_prompt: Optional[str] = Form(None)
 ):
@@ -53,15 +53,23 @@ async def upload_and_analyze_food(
             raise HTTPException(status_code=500, detail=result["error"])
         
         # Convert to response model
-        return FoodAnalysisResult(
+        structured_data = result.get("structured_data", {})
+        
+        return AnalysisResult(
             success=True,
-            analysis_type=result["structured_data"].get("analysis_type", "food_analysis"),
+            analysis_type=result.get("analysis_type", "general_analysis"),
+            image_type=result.get("image_type"),
             timestamp=result["timestamp"],
             processing_time_ms=processing_time_ms,
-            result=result["structured_data"],
-            food_items=[],  # TODO: Parse from structured_data
-            total_calories=None,
-            dietary_restrictions=[]
+            result=result,
+            # Food-specific fields (extracted from structured_data)
+            primary_food_item=structured_data.get("primary_food_item"),
+            ingredients=structured_data.get("ingredients"),
+            nutritional_info=structured_data.get("nutritional_info"),
+            dietary_risks=structured_data.get("dietary_risks"),
+            health_assessment=structured_data.get("health_assessment"),
+            # Text/sign-specific fields (extracted from structured_data)
+            extracted_text=structured_data.get("extracted_text")
         )
         
     except Exception as e:
@@ -153,12 +161,23 @@ async def general_analysis(
             raise HTTPException(status_code=500, detail=result["error"])
         
         # Convert to response model
+        structured_data = result.get("structured_data", {})
+        
         return AnalysisResult(
             success=True,
             analysis_type="general_analysis",
+            image_type=result.get("image_type"),
             timestamp=result["timestamp"],
             processing_time_ms=processing_time_ms,
-            result={"response": result["response"]}
+            result=result,
+            # Food-specific fields (extracted from structured_data)
+            primary_food_item=structured_data.get("primary_food_item"),
+            ingredients=structured_data.get("ingredients"),
+            nutritional_info=structured_data.get("nutritional_info"),
+            dietary_risks=structured_data.get("dietary_risks"),
+            health_assessment=structured_data.get("health_assessment"),
+            # Text/sign-specific fields (extracted from structured_data)
+            extracted_text=structured_data.get("extracted_text")
         )
         
     except Exception as e:
@@ -305,7 +324,7 @@ async def food_alias(
     """
     Alias for /upload-and-analyze - Upload an image and analyze food items
     """
-    return await upload_and_analyze_food(image, custom_prompt)
+    return await upload_and_analyze(image, custom_prompt)
 
 @router.post("/food-to-restaurant")
 async def food_to_restaurant_alias(
