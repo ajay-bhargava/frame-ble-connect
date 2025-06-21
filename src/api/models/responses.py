@@ -2,38 +2,18 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
-class FoodItem(BaseModel):
-    """Individual food item detected"""
-    name: str
-    confidence: float
-    calories: Optional[int] = None
-    nutrients: Optional[Dict[str, Any]] = None
-
 class AnalysisResult(BaseModel):
-    """Result of AI analysis"""
+    """Result of AI analysis - focused on signs"""
     success: bool
     analysis_type: str
-    image_type: Optional[str] = None  # "food", "street sign", "unknown"
+    image_type: Optional[str] = "street_sign"
     timestamp: datetime
     processing_time_ms: float
     result: Dict[str, Any]
     error_message: Optional[str] = None
     
-    # Food-specific fields
-    primary_food_item: Optional[str] = None
-    ingredients: Optional[List[str]] = None
-    nutritional_info: Optional[Dict[str, Any]] = None
-    dietary_risks: Optional[List[str]] = None
-    health_assessment: Optional[str] = None
-    
     # Text/sign-specific fields
     extracted_text: Optional[str] = None
-
-class FoodAnalysisResult(AnalysisResult):
-    """Specific result for food analysis"""
-    food_items: List[FoodItem]
-    total_calories: Optional[int] = None
-    dietary_restrictions: Optional[List[str]] = None
 
 class DeviceStatus(BaseModel):
     """Current device status"""

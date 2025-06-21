@@ -145,18 +145,6 @@ async def main():
         
         print(f"Image saved as {filename}")
         
-        # --- New: Upload to API and print response ---
-        api_url = "http://localhost:8000/api/v1/analysis/food-to-restaurant"
-        try:
-            with open(filename, "rb") as img_file:
-                files = {"image": (filename, img_file, "image/jpeg")}
-                response = requests.post(api_url, files=files)
-            print("\nAPI response:")
-            print(response.status_code, response.text)
-        except Exception as e:
-            print(f"Error uploading image to API: {e}")
-        # --- End new code ---
-        
         # Also update the display to show the captured image
         display_thread.update_image(jpeg_bytes)
         
