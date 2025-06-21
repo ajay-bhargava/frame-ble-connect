@@ -44,7 +44,19 @@ cd frame-ble-connect
 git checkout feature/init  # or main if merged
 ```
 
-### 2. Install Dependencies
+### 2. Create and Activate Virtual Environment
+```bash
+# Create virtual environment
+python -m venv .venv
+
+# Activate virtual environment
+# On macOS/Linux:
+source .venv/bin/activate
+# On Windows:
+# .venv\Scripts\activate
+```
+
+### 3. Install Dependencies
 ```bash
 # Using uv (recommended)
 uv sync
@@ -53,7 +65,7 @@ uv sync
 pip install -r requirements.txt
 ```
 
-### 3. Configure Environment
+### 4. Configure Environment
 ```bash
 cp env.example .env
 # Edit .env and add your Moondream API key
@@ -85,8 +97,9 @@ LOG_LEVEL=info
 
 #### Start the API Server
 ```bash
-# Activate virtual environment
-source .venv/bin/activate
+# Ensure virtual environment is activated
+source .venv/bin/activate  # On macOS/Linux
+# .venv\Scripts\activate   # On Windows
 
 # Start the server
 python start_api.py
@@ -248,8 +261,9 @@ ruff check src/
 1. **Port already in use**: Change the PORT in your .env file
 2. **Frame connection fails**: Ensure glasses are powered on and Bluetooth is enabled
 3. **Moondream API errors**: Verify your API key is correct and has sufficient credits
-4. **Import errors**: Make sure you're running from the project root
-5. **Display issues**: Application will fall back to headless mode automatically
+4. **Import errors**: Make sure you're running from the project root and virtual environment is activated
+5. **Virtual environment issues**: Ensure you've created and activated the virtual environment before installing dependencies
+6. **Display issues**: Application will fall back to headless mode automatically
 
 ### Debug Mode
 ```bash
