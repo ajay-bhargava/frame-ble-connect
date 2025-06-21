@@ -7,6 +7,7 @@ import threading
 import queue
 import os
 import sys
+import httpx
 
 from frame_msg import FrameMsg, RxPhoto, TxCaptureSettings
 
@@ -141,6 +142,11 @@ async def main():
         filename = "captured_frame.jpg"
         with open(filename, "wb") as f:
             f.write(jpeg_bytes)
+            
+        files = {"file": ("captured_frame.jpg", jpeg_bytes, "image/jpeg")}
+        
+        response = httpx.post("https://ajay-bhargava--moondream-ocr-dev.modal.run/upload-image", files=files)
+        print(response.json())
         
         print(f"Image saved as {filename}")
         
