@@ -8,7 +8,7 @@ import sys
 from dotenv import load_dotenv
 from pathlib import Path
 
-from .routes import analysis, device, parking, haptic
+from src.api.routes import analysis, device, parking, haptic
 
 # Load environment variables
 load_dotenv()
