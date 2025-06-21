@@ -23,6 +23,7 @@ asgi_image = (
         "starlette>=0.41.0",
         "markdown>=3.5.1",
         "fastapi",
+        "moondream>=1.0.3"
     )
 )
 
