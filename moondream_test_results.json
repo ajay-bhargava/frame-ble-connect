@@ -1,0 +1,218 @@
+{
+  "caption": {
+    "short": {
+      "success": true,
+      "caption": "Three individuals, two men and a woman, engage in various activities around a round table in a dimly lit restaurant or cafe.",
+      "request_id": "2025-06-21_caption_2025-06-21-19:25:17-f76152",
+      "length": "short",
+      "timestamp": "2025-06-21T15:25:18.266769",
+      "processing_time_ms": 764.3599510192871,
+      "error_message": null
+    },
+    "normal": {
+      "success": true,
+      "caption": "In a dimly lit room, possibly a coffee shop or similar public space, two individuals are seated at a round table, engrossed in their work. The person on the left is seated in a black chair, focused on their laptop. The person on the right is seated in a blue chair, and also appears to be working on their laptop.  The table holds a plate, a few cups or disposable containers, and bags. The background features other people seated at tables, blurred due to the depth of field. The overall atmosphere is dark and subdued, with only two individuals clearly visible in the scene.",
+      "request_id": "2025-06-21_caption_2025-06-21-19:25:18-5c3e0f",
+      "length": "normal",
+      "timestamp": "2025-06-21T15:25:19.872362",
+      "processing_time_ms": 1600.1181602478027,
+      "error_message": null
+    }
+  },
+  "query": {
+    "question_1": {
+      "success": true,
+      "answer": "The main subject of this image is a group of people sitting around a table, engaged in conversation and using their laptops.",
+      "question": "What is the main subject of this image?",
+      "request_id": "2025-06-21_vqa_2025-06-21-19:25:20-8619a5",
+      "timestamp": "2025-06-21T15:25:20.381681",
+      "processing_time_ms": 503.4048557281494,
+      "error_message": null
+    },
+    "question_2": {
+      "success": true,
+      "answer": "The prominent colors in this image are black, white, and gray.",
+      "question": "What colors are prominent in this image?",
+      "request_id": "2025-06-21_vqa_2025-06-21-19:25:20-57207b",
+      "timestamp": "2025-06-21T15:25:20.933368",
+      "processing_time_ms": 547.1737384796143,
+      "error_message": null
+    },
+    "question_3": {
+      "success": true,
+      "answer": "This image is taken indoors, in a dimly lit room.",
+      "question": "Is this image taken indoors or outdoors?",
+      "request_id": "2025-06-21_vqa_2025-06-21-19:25:21-f207fd",
+      "timestamp": "2025-06-21T15:25:21.306473",
+      "processing_time_ms": 367.87986755371094,
+      "error_message": null
+    },
+    "question_4": {
+      "success": true,
+      "answer": "This photo was taken at night.",
+      "question": "What time of day was this photo taken?",
+      "request_id": "2025-06-21_vqa_2025-06-21-19:25:21-ca938d",
+      "timestamp": "2025-06-21T15:25:21.650871",
+      "processing_time_ms": 342.6382541656494,
+      "error_message": null
+    }
+  },
+  "detect": {
+    "person": {
+      "success": true,
+      "objects": [
+        {
+          "x_min": 0.3416758179664612,
+          "y_min": 0.30208516120910645,
+          "x_max": 0.7423085570335388,
+          "y_max": 0.9635398387908936
+        },
+        {
+          "x_min": 0.5034508109092712,
+          "y_min": 0.29659106582403183,
+          "x_max": 0.7738929390907288,
+          "y_max": 0.5295808091759682
+        },
+        {
+          "x_min": 0.0007127411663532257,
+          "y_min": 0.2504696249961853,
+          "x_max": 0.08913100883364677,
+          "y_max": 0.3823428750038147
+        },
+        {
+          "x_min": 0.034949660301208496,
+          "y_min": 0.30308760702610016,
+          "x_max": 0.3166128396987915,
+          "y_max": 0.7808967679738998
+        },
+        {
+          "x_min": 0.13653086498379707,
+          "y_min": 0.24946559593081474,
+          "x_max": 0.23846913501620293,
+          "y_max": 0.35209690406918526
+        }
+      ],
+      "object_type": "person",
+      "count": 5,
+      "request_id": "2025-06-21_detect_2025-06-21-19:25:21-a0c65a",
+      "timestamp": "2025-06-21T15:25:22.310945",
+      "processing_time_ms": 656.2628746032715,
+      "error_message": null
+    },
+    "face": {
+      "success": true,
+      "objects": [
+        {
+          "x_min": 0.146074790507555,
+          "y_min": 0.34771180525422096,
+          "x_max": 0.199628334492445,
+          "y_max": 0.41986631974577904
+        }
+      ],
+      "object_type": "face",
+      "count": 1,
+      "request_id": "2025-06-21_detect_2025-06-21-19:25:22-4fd075",
+      "timestamp": "2025-06-21T15:25:22.619774",
+      "processing_time_ms": 303.47275733947754,
+      "error_message": null
+    },
+    "car": {
+      "success": true,
+      "objects": [],
+      "object_type": "car",
+      "count": 0,
+      "request_id": "2025-06-21_detect_2025-06-21-19:25:22-47b361",
+      "timestamp": "2025-06-21T15:25:22.852527",
+      "processing_time_ms": 228.3608913421631,
+      "error_message": null
+    },
+    "food": {
+      "success": true,
+      "objects": [],
+      "object_type": "food",
+      "count": 0,
+      "request_id": "2025-06-21_detect_2025-06-21-19:25:23-e8705b",
+      "timestamp": "2025-06-21T15:25:23.145566",
+      "processing_time_ms": 291.20421409606934,
+      "error_message": null
+    },
+    "text": {
+      "success": true,
+      "objects": [],
+      "object_type": "text",
+      "count": 0,
+      "request_id": "2025-06-21_detect_2025-06-21-19:25:23-c417a3",
+      "timestamp": "2025-06-21T15:25:23.425393",
+      "processing_time_ms": 274.9638557434082,
+      "error_message": null
+    }
+  },
+  "point": {
+    "person": {
+      "success": true,
+      "points": [
+        {
+          "x": 0.650390625,
+          "y": 0.6171875
+        },
+        {
+          "x": 0.7255859375,
+          "y": 0.423828125
+        },
+        {
+          "x": 0.18359375,
+          "y": 0.29296875
+        },
+        {
+          "x": 0.044921875,
+          "y": 0.302734375
+        },
+        {
+          "x": 0.09765625,
+          "y": 0.4609375
+        }
+      ],
+      "object_type": "person",
+      "count": 5,
+      "request_id": "2025-06-21_point_2025-06-21-19:25:23-4aa24d",
+      "timestamp": "2025-06-21T15:25:23.767936",
+      "processing_time_ms": 338.1378650665283,
+      "error_message": null
+    },
+    "face": {
+      "success": true,
+      "points": [
+        {
+          "x": 0.1728515625,
+          "y": 0.3828125
+        }
+      ],
+      "object_type": "face",
+      "count": 1,
+      "request_id": "2025-06-21_point_2025-06-21-19:25:23-e75523",
+      "timestamp": "2025-06-21T15:25:24.009941",
+      "processing_time_ms": 237.95485496520996,
+      "error_message": null
+    },
+    "car": {
+      "success": true,
+      "points": [],
+      "object_type": "car",
+      "count": 0,
+      "request_id": "2025-06-21_point_2025-06-21-19:25:24-817d61",
+      "timestamp": "2025-06-21T15:25:24.232161",
+      "processing_time_ms": 217.48805046081543,
+      "error_message": null
+    },
+    "food": {
+      "success": true,
+      "points": [],
+      "object_type": "food",
+      "count": 0,
+      "request_id": "2025-06-21_point_2025-06-21-19:25:24-340dc3",
+      "timestamp": "2025-06-21T15:25:24.449286",
+      "processing_time_ms": 212.19182014465332,
+      "error_message": null
+    }
+  }
+}

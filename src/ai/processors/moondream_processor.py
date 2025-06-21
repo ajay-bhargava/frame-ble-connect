@@ -375,7 +375,364 @@ class MoondreamProcessor:
             "primary_food_item": primary_food_item,
             "raw_analysis": ai_response
         } 
-    
+
+    async def caption(self, image_data: bytes, length: str = "normal", stream: bool = False) -> Dict[str, Any]:
+        """
+        Generate natural language descriptions of images using Moondream Caption API
+        
+        This method analyzes an image and returns descriptive captions, from brief summaries 
+        to detailed explanations of visual content. Useful for generating alt text for 
+        accessibility, content indexing, and automated documentation.
+        
+        Args:
+            image_data: JPEG image bytes to analyze
+            length: Caption detail level - "short" for 1-2 sentence summary or "normal" 
+                   for detailed description (default: "normal")
+            stream: Whether to stream the response token by token (default: False)
+            
+        Returns:
+            Dict containing:
+            - success: Boolean indicating if the request succeeded
+            - caption: Generated caption text (if successful)
+            - request_id: Unique identifier for the request
+            - length: The length parameter used
+            - timestamp: ISO timestamp of the request
+            - error: Error message (if failed)
+            
+        Raises:
+            ValueError: If length parameter is not "short" or "normal"
+        """
+        if length not in ["short", "normal"]:
+            raise ValueError("Length must be 'short' or 'normal'")
+        
+        # Convert image to base64 data URI
+        image_b64 = base64.b64encode(image_data).decode('utf-8')
+        image_url = f"data:image/jpeg;base64,{image_b64}"
+        
+        payload = {
+            "image_url": image_url,
+            "length": length,
+            "stream": stream
+        }
+        
+        try:
+            print(f"🖼️ Generating {length} caption for image ({len(image_data)} bytes)")
+            print(f"🔑 API Key status: {'Set' if self.api_key else 'Missing'}")
+            if self.api_key:
+                print(f"🔑 API Key (first 20 chars): {self.api_key[:20]}...")
+            print(f"🌐 Request URL: {self.base_url}/v1/caption")
+            print(f"📦 Payload keys: {list(payload.keys())}")
+            
+            headers = {
+                "X-Moondream-Auth": self.api_key or "",
+                "Content-Type": "application/json"
+            }
+            print(f"🔧 Headers: {list(headers.keys())}")
+            
+            response = await self.client.post(
+                f"{self.base_url}/v1/caption",
+                headers=headers,
+                json=payload
+            )
+            
+            response.raise_for_status()
+            result = response.json()
+            
+            return {
+                "success": True,
+                "caption": result.get("caption", ""),
+                "request_id": result.get("request_id", ""),
+                "length": length,
+                "timestamp": datetime.now().isoformat()
+            }
+            
+        except httpx.HTTPStatusError as e:
+            error_msg = f"Caption API error {e.response.status_code}: {e.response.text}"
+            print(f"❌ {error_msg}")
+            
+            return {
+                "success": False,
+                "error": error_msg,
+                "length": length,
+                "timestamp": datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            error_msg = f"Caption request failed: {str(e)}"
+            print(f"❌ {error_msg}")
+            
+            return {
+                "success": False,
+                "error": error_msg,
+                "length": length,
+                "timestamp": datetime.now().isoformat()
+            }
+
+    async def query(self, image_data: bytes, question: str, stream: bool = False) -> Dict[str, Any]:
+        """
+        Ask natural language questions about images using Moondream Query API (VQA)
+        
+        This method enables Visual Question Answering - you can ask specific questions
+        about image content and receive detailed answers. More focused than general
+        captioning, this is ideal for extracting specific information from images.
+        
+        Args:
+            image_data: JPEG image bytes to analyze
+            question: Natural language question to ask about the image (max 512 chars)
+            stream: Whether to stream the response token by token (default: False)
+            
+        Returns:
+            Dict containing:
+            - success: Boolean indicating if the request succeeded
+            - answer: AI-generated answer to the question (if successful)  
+            - question: The original question asked
+            - request_id: Unique identifier for the request
+            - timestamp: ISO timestamp of the request
+            - error: Error message (if failed)
+            
+        Raises:
+            ValueError: If question exceeds 512 characters
+            
+        Example:
+            result = await processor.query(image_bytes, "What color is the car?")
+            print(result["answer"])  # "The car appears to be red."
+        """
+        if len(question) > 512:
+            raise ValueError("Question must be 512 characters or less")
+        
+        # Convert image to base64 data URI
+        image_b64 = base64.b64encode(image_data).decode('utf-8')
+        image_url = f"data:image/jpeg;base64,{image_b64}"
+        
+        payload = {
+            "image_url": image_url,
+            "question": question,
+            "stream": stream
+        }
+        
+        try:
+            print(f"❓ Querying image: '{question}' ({len(image_data)} bytes)")
+            
+            response = await self.client.post(
+                f"{self.base_url}/v1/query",
+                headers={
+                    "X-Moondream-Auth": self.api_key or "",
+                    "Content-Type": "application/json"
+                },
+                json=payload
+            )
+            
+            response.raise_for_status()
+            result = response.json()
+            
+            return {
+                "success": True,
+                "answer": result.get("answer", ""),
+                "question": question,
+                "request_id": result.get("request_id", ""),
+                "timestamp": datetime.now().isoformat()
+            }
+            
+        except httpx.HTTPStatusError as e:
+            error_msg = f"Query API error {e.response.status_code}: {e.response.text}"
+            print(f"❌ {error_msg}")
+            
+            return {
+                "success": False,
+                "error": error_msg,
+                "question": question,
+                "timestamp": datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            error_msg = f"Query request failed: {str(e)}"
+            print(f"❌ {error_msg}")
+            
+            return {
+                "success": False,
+                "error": error_msg,
+                "question": question,
+                "timestamp": datetime.now().isoformat()
+            }
+
+    async def detect(self, image_data: bytes, object_type: str) -> Dict[str, Any]:
+        """
+        Detect and locate specific objects in images using Moondream Detect API
+        
+        This method identifies objects and returns bounding box coordinates for each
+        detected instance. Uses zero-shot detection, meaning it can detect virtually
+        any object you specify. Coordinates are normalized (0-1) relative to image size.
+        
+        Args:
+            image_data: JPEG image bytes to analyze
+            object_type: Type of object to detect (e.g., "person", "car", "face", "food")
+                        Can be any object description - not limited to predefined list
+            
+        Returns:
+            Dict containing:
+            - success: Boolean indicating if the request succeeded
+            - objects: List of detected objects with bounding boxes (if successful)
+                      Each object has: x_min, y_min, x_max, y_max (normalized 0-1)
+            - object_type: The object type that was searched for
+            - count: Number of objects detected
+            - request_id: Unique identifier for the request  
+            - timestamp: ISO timestamp of the request
+            - error: Error message (if failed)
+            
+        Example:
+            result = await processor.detect(image_bytes, "person")
+            for obj in result["objects"]:
+                print(f"Person found at ({obj['x_min']}, {obj['y_min']}) to ({obj['x_max']}, {obj['y_max']})")
+        """
+        # Convert image to base64 data URI
+        image_b64 = base64.b64encode(image_data).decode('utf-8')
+        image_url = f"data:image/jpeg;base64,{image_b64}"
+        
+        payload = {
+            "image_url": image_url,
+            "object": object_type
+        }
+        
+        try:
+            print(f"🔍 Detecting '{object_type}' in image ({len(image_data)} bytes)")
+            
+            response = await self.client.post(
+                f"{self.base_url}/v1/detect",
+                headers={
+                    "X-Moondream-Auth": self.api_key or "",
+                    "Content-Type": "application/json"
+                },
+                json=payload
+            )
+            
+            response.raise_for_status()
+            result = response.json()
+            
+            objects = result.get("objects", [])
+            
+            return {
+                "success": True,
+                "objects": objects,
+                "object_type": object_type,
+                "count": len(objects),
+                "request_id": result.get("request_id", ""),
+                "timestamp": datetime.now().isoformat()
+            }
+            
+        except httpx.HTTPStatusError as e:
+            error_msg = f"Detect API error {e.response.status_code}: {e.response.text}"
+            print(f"❌ {error_msg}")
+            
+            return {
+                "success": False,
+                "error": error_msg,
+                "object_type": object_type,
+                "count": 0,
+                "timestamp": datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            error_msg = f"Detect request failed: {str(e)}"
+            print(f"❌ {error_msg}")
+            
+            return {
+                "success": False,
+                "error": error_msg,
+                "object_type": object_type,
+                "count": 0,
+                "timestamp": datetime.now().isoformat()
+            }
+
+    async def point(self, image_data: bytes, object_type: str) -> Dict[str, Any]:
+        """
+        Get precise center point coordinates for objects using Moondream Point API
+        
+        Unlike detect() which returns bounding boxes, this method returns center points
+        for each instance of the specified object. Useful for precise targeting, UI
+        interactions, or when you need exact object locations rather than full bounds.
+        
+        Args:
+            image_data: JPEG image bytes to analyze
+            object_type: Type of object to locate (e.g., "person", "car", "face", "button")
+                        Can be any object description - not limited to predefined list
+            
+        Returns:
+            Dict containing:
+            - success: Boolean indicating if the request succeeded
+            - points: List of center points for detected objects (if successful)
+                     Each point has: x, y coordinates (normalized 0-1)
+            - object_type: The object type that was searched for
+            - count: Number of points/objects found
+            - request_id: Unique identifier for the request
+            - timestamp: ISO timestamp of the request  
+            - error: Error message (if failed)
+            
+        Example:
+            result = await processor.point(image_bytes, "button")
+            for point in result["points"]:
+                pixel_x = point["x"] * image_width
+                pixel_y = point["y"] * image_height
+                print(f"Button center at pixel ({pixel_x}, {pixel_y})")
+        """
+        # Convert image to base64 data URI
+        image_b64 = base64.b64encode(image_data).decode('utf-8')
+        image_url = f"data:image/jpeg;base64,{image_b64}"
+        
+        payload = {
+            "image_url": image_url,
+            "object": object_type
+        }
+        
+        try:
+            print(f"📍 Finding center points for '{object_type}' in image ({len(image_data)} bytes)")
+            
+            response = await self.client.post(
+                f"{self.base_url}/v1/point",
+                headers={
+                    "X-Moondream-Auth": self.api_key or "",
+                    "Content-Type": "application/json"
+                },
+                json=payload
+            )
+            
+            response.raise_for_status()
+            result = response.json()
+            
+            points = result.get("points", [])
+            
+            return {
+                "success": True,
+                "points": points,
+                "object_type": object_type,
+                "count": len(points),
+                "request_id": result.get("request_id", ""),
+                "timestamp": datetime.now().isoformat()
+            }
+            
+        except httpx.HTTPStatusError as e:
+            error_msg = f"Point API error {e.response.status_code}: {e.response.text}"
+            print(f"❌ {error_msg}")
+            
+            return {
+                "success": False,
+                "error": error_msg,
+                "object_type": object_type,
+                "count": 0,
+                "timestamp": datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            error_msg = f"Point request failed: {str(e)}"
+            print(f"❌ {error_msg}")
+            
+            return {
+                "success": False,
+                "error": error_msg,
+                "object_type": object_type,
+                "count": 0,
+                "timestamp": datetime.now().isoformat()
+            } 
+        
     async def close(self):
         """Close the HTTP client"""
-        await self.client.aclose() 
+        await self.client.aclose()
