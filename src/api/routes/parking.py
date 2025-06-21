@@ -208,4 +208,91 @@ Be thorough and include every piece of text you can read."""
                 "processing_time_ms": processing_time_ms,
                 "timestamp": datetime.now().isoformat()
             }
-        ) 
+        )
+
+@router.get("/violations-by-zone/{zone_number}")
+async def get_violations_by_zone(zone_number: str):
+    """
+    Get parking violations count by zone number (pay-by-cell number)
+    
+    This endpoint:
+    1. Gets the street address from the zone number
+    2. Uses that address to get the violation count
+    
+    ⚠️  Note: Violation data is historical from 2023, not real-time current data.
+    
+    Args:
+        zone_number: The pay-by-cell number (e.g., "106184")
+        
+    Returns:
+        Complete analysis with zone info, address, and violation count
+    """
+    try:
+        parking_service = ParkingService()
+        result = await parking_service.get_violations_by_zone(zone_number)
+        await parking_service.close()
+        return result
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Failed to get violations by zone: {str(e)}",
+            "zone_number": zone_number,
+            "timestamp": datetime.now().isoformat()
+        }
+
+@router.get("/violations-by-street/{street_name}")
+async def get_violations_by_street(street_name: str):
+    """
+    Get parking violations count for a street name
+    
+    ⚠️  Note: Violation data is historical from 2023, not real-time current data.
+    
+    Args:
+        street_name: The street name (e.g., "LITTLE WEST 12 STREET")
+        
+    Returns:
+        Violation count and metadata
+    """
+    try:
+        parking_service = ParkingService()
+        result = await parking_service.get_violation_count_by_street(street_name)
+        await parking_service.close()
+        return result
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Failed to get violations by street: {str(e)}",
+            "street_name": street_name,
+            "timestamp": datetime.now().isoformat()
+        }
+
+@router.get("/violation-count/{zone_number}")
+async def get_violation_count_by_zone(zone_number: str):
+    """
+    Get just the violation count for a zone number (pay-by-cell number)
+    
+    This endpoint:
+    1. Gets the street address from the zone number
+    2. Uses that address to get the violation count
+    3. Returns a simplified response with just the count
+    
+    ⚠️  Note: Violation data is historical from 2023, not real-time current data.
+    
+    Args:
+        zone_number: The pay-by-cell number (e.g., "106184")
+        
+    Returns:
+        Simplified response with zone number, street name, and violation count
+    """
+    try:
+        parking_service = ParkingService()
+        result = await parking_service.get_violation_count_by_zone(zone_number)
+        await parking_service.close()
+        return result
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Failed to get violation count by zone: {str(e)}",
+            "zone_number": zone_number,
+            "timestamp": datetime.now().isoformat()
+        } 

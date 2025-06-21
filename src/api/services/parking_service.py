@@ -177,32 +177,21 @@ class ParkingService:
         if not street_name:
             return ""
         
-        # Convert to uppercase
+        # Convert to uppercase and trim whitespace
         normalized = street_name.upper().strip()
         
-        # Common abbreviations and variations
+        # Only do minimal normalization - don't replace existing full words
+        # This prevents corruption of already correct street names
         replacements = {
-            "STREET": "STREET",
             "ST.": "STREET",
-            "ST": "STREET",
-            "AVENUE": "AVENUE", 
             "AVE.": "AVENUE",
-            "AVE": "AVENUE",
-            "BOULEVARD": "BOULEVARD",
             "BLVD.": "BOULEVARD",
-            "BLVD": "BOULEVARD",
-            "ROAD": "ROAD",
             "RD.": "ROAD",
-            "RD": "ROAD",
-            "DRIVE": "DRIVE",
             "DR.": "DRIVE",
-            "DR": "DRIVE",
-            "PLACE": "PLACE",
-            "PL.": "PLACE",
-            "PL": "PLACE"
+            "PL.": "PLACE"
         }
         
-        # Apply replacements
+        # Apply only abbreviation replacements
         for old, new in replacements.items():
             normalized = normalized.replace(old, new)
         
@@ -323,4 +312,229 @@ class ParkingService:
     
     async def close(self):
         """Close the HTTP client"""
-        await self.client.aclose() 
+        await self.client.aclose()
+    
+    async def get_violation_count_by_street(self, street_name: str) -> Dict[str, Any]:
+        """
+        Get parking violation count for a street name using NYC Open Data API
+        
+        Note: This dataset contains historical violation data from 2023.
+        It is not real-time current data.
+        
+        Args:
+            street_name: The street name to search for
+            
+        Returns:
+            Violation count and metadata
+        """
+        try:
+            # Normalize street name for violations API
+            normalized_street = self._normalize_for_violations(street_name)
+            
+            url = "https://data.cityofnewyork.us/resource/pvqr-7yc4.json"
+            params = {
+                "$select": "count(*)",
+                "street_name": normalized_street
+            }
+            
+            response = await self.client.get(url, params=params)
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            if data and len(data) > 0 and "count" in data[0]:
+                violation_count = int(data[0]["count"])
+                return {
+                    "success": True,
+                    "street_name": street_name,
+                    "normalized_street": normalized_street,
+                    "violation_count": violation_count,
+                    "data_freshness": "Historical data from 2023 (not real-time)",
+                    "data_source": "NYC Open Data - Parking Violations Dataset",
+                    "dataset_url": "https://data.cityofnewyork.us/City-Government/Parking-Violations-Issued-Fiscal-Year-2024/pvqr-7yc4",
+                    "timestamp": datetime.now().isoformat()
+                }
+            else:
+                return {
+                    "success": True,
+                    "street_name": street_name,
+                    "normalized_street": normalized_street,
+                    "violation_count": 0,
+                    "data_freshness": "Historical data from 2023 (not real-time)",
+                    "data_source": "NYC Open Data - Parking Violations Dataset",
+                    "dataset_url": "https://data.cityofnewyork.us/City-Government/Parking-Violations-Issued-Fiscal-Year-2024/pvqr-7yc4",
+                    "timestamp": datetime.now().isoformat()
+                }
+                
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Failed to fetch violation count: {str(e)}",
+                "street_name": street_name,
+                "data_freshness": "Historical data from 2023 (not real-time)",
+                "timestamp": datetime.now().isoformat()
+            }
+    
+    async def get_violations_by_zone(self, zone_number: str) -> Dict[str, Any]:
+        """
+        Get parking violations count by zone number (pay-by-cell number)
+        
+        This method:
+        1. Gets the street address from the zone number
+        2. Uses that address to get the violation count
+        
+        Args:
+            zone_number: The pay-by-cell number
+            
+        Returns:
+            Complete analysis with zone info, address, and violation count
+        """
+        try:
+            # Step 1: Get parking info by zone number
+            zone_info = await self.get_parking_info_by_zone(zone_number)
+            
+            if not zone_info.get("success"):
+                return {
+                    "success": False,
+                    "error": f"Failed to get parking info for zone {zone_number}",
+                    "zone_number": zone_number,
+                    "timestamp": datetime.now().isoformat()
+                }
+            
+            # Extract street name from zone info
+            meter_info = zone_info.get("meter_info", {})
+            street_name = meter_info.get("on_street")
+            
+            if not street_name:
+                return {
+                    "success": False,
+                    "error": f"No street name found for zone {zone_number}",
+                    "zone_number": zone_number,
+                    "timestamp": datetime.now().isoformat()
+                }
+            
+            # Step 2: Get violation count for the street
+            violation_info = await self.get_violation_count_by_street(street_name)
+            
+            # Combine the results
+            return {
+                "success": True,
+                "zone_number": zone_number,
+                "parking_info": zone_info,
+                "street_name": street_name,
+                "violation_info": violation_info,
+                "timestamp": datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Failed to get violations by zone: {str(e)}",
+                "zone_number": zone_number,
+                "timestamp": datetime.now().isoformat()
+            }
+    
+    def _normalize_for_violations(self, street_name: str) -> str:
+        """
+        Normalize street name specifically for the violations API
+        The violations API uses ALL CAPS and specific abbreviations
+        """
+        if not street_name:
+            return ""
+        
+        # Convert to uppercase and trim whitespace
+        normalized = street_name.upper().strip()
+        
+        # Replace full words with standard abbreviations used in violations dataset
+        replacements = {
+            "STREET": "ST",
+            "AVENUE": "AVE", 
+            "BOULEVARD": "BLVD",
+            "PLACE": "PL",
+            "ROAD": "RD",
+            "DRIVE": "DR",
+            "LANE": "LN",
+            "TERRACE": "TER",
+            "COURT": "CT",
+            "WAY": "WAY",
+            "PARKWAY": "PKWY",
+            "EXPRESSWAY": "EXPY"
+        }
+        
+        # Apply replacements
+        for long, short in replacements.items():
+            normalized = normalized.replace(long, short)
+        
+        # Remove periods
+        normalized = normalized.replace(".", "")
+        
+        return normalized
+    
+    async def get_violation_count_by_zone(self, zone_number: str) -> Dict[str, Any]:
+        """
+        Get just the violation count for a zone number (pay-by-cell number)
+        
+        This method:
+        1. Gets the street address from the zone number
+        2. Uses that address to get the violation count
+        3. Returns a simplified response with just the count
+        
+        Args:
+            zone_number: The pay-by-cell number
+            
+        Returns:
+            Simplified response with zone number, street name, and violation count
+        """
+        try:
+            # Step 1: Get parking info by zone number
+            zone_info = await self.get_parking_info_by_zone(zone_number)
+            
+            if not zone_info.get("success"):
+                return {
+                    "success": False,
+                    "error": f"Failed to get parking info for zone {zone_number}",
+                    "zone_number": zone_number,
+                    "timestamp": datetime.now().isoformat()
+                }
+            
+            # Extract street name from zone info
+            meter_info = zone_info.get("meter_info", {})
+            street_name = meter_info.get("on_street")
+            
+            if not street_name:
+                return {
+                    "success": False,
+                    "error": f"No street name found for zone {zone_number}",
+                    "zone_number": zone_number,
+                    "timestamp": datetime.now().isoformat()
+                }
+            
+            # Step 2: Get violation count for the street
+            violation_info = await self.get_violation_count_by_street(street_name)
+            
+            if not violation_info.get("success"):
+                return {
+                    "success": False,
+                    "error": f"Failed to get violation count: {violation_info.get('error')}",
+                    "zone_number": zone_number,
+                    "street_name": street_name,
+                    "timestamp": datetime.now().isoformat()
+                }
+            
+            # Return simplified response with just the count
+            return {
+                "success": True,
+                "zone_number": zone_number,
+                "street_name": street_name,
+                "violation_count": violation_info.get("violation_count", 0),
+                "data_freshness": violation_info.get("data_freshness"),
+                "timestamp": datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Failed to get violation count by zone: {str(e)}",
+                "zone_number": zone_number,
+                "timestamp": datetime.now().isoformat()
+            } 
