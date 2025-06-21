@@ -25,7 +25,13 @@ async def upload_and_analyze_food(
     custom_prompt: Optional[str] = Form(None)
 ):
     """
-    Upload an image and analyze food items using Moondream AI
+    Upload an image and analyze it using Moondream AI with optional custom prompt
+    
+    Examples:
+    - Food analysis: Leave custom_prompt empty or use "What food is shown in this image?"
+    - Text reading: "Read all the text visible in this image"
+    - Street signs: "What street signs or addresses are visible in this image?"
+    - Menu reading: "Read the menu items and prices shown in this image"
     """
     if not image.content_type or not image.content_type.startswith('image/'):
         raise HTTPException(status_code=400, detail="File must be an image")
@@ -37,8 +43,8 @@ async def upload_and_analyze_food(
         # Record start time for processing
         start_time = time.time()
         
-        # Perform food analysis
-        result = await moondream_processor.analyze_food(image_data)
+        # Perform analysis with custom prompt
+        result = await moondream_processor.analyze_food(image_data, custom_prompt)
         
         # Calculate processing time
         processing_time_ms = (time.time() - start_time) * 1000
@@ -49,7 +55,7 @@ async def upload_and_analyze_food(
         # Convert to response model
         return FoodAnalysisResult(
             success=True,
-            analysis_type="food_analysis",
+            analysis_type=result["structured_data"].get("analysis_type", "food_analysis"),
             timestamp=result["timestamp"],
             processing_time_ms=processing_time_ms,
             result=result["structured_data"],
@@ -83,7 +89,7 @@ async def upload_and_find_restaurant(
         start_time = time.time()
         
         # Step 1: Analyze food
-        food_result = await moondream_processor.analyze_food(image_data)
+        food_result = await moondream_processor.analyze_food(image_data, custom_prompt)
         
         if not food_result["success"]:
             raise HTTPException(status_code=500, detail=f"Food analysis failed: {food_result['error']}")
@@ -187,7 +193,7 @@ async def capture_and_analyze_food(
             start_time = time.time()
             
             # Analyze food
-            analysis_result = await moondream_processor.analyze_food(capture_result["image_data"])
+            analysis_result = await moondream_processor.analyze_food(capture_result["image_data"], custom_prompt)
             
             # Calculate processing time
             processing_time_ms = (time.time() - start_time) * 1000
@@ -247,7 +253,7 @@ async def capture_and_find_restaurant(
             
             # Step 2: Analyze food
             start_time = time.time()
-            food_result = await moondream_processor.analyze_food(capture_result["image_data"])
+            food_result = await moondream_processor.analyze_food(capture_result["image_data"], custom_prompt)
             
             if not food_result["success"]:
                 raise HTTPException(status_code=500, detail=f"Food analysis failed: {food_result['error']}")
