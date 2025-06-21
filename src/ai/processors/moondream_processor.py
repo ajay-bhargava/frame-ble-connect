@@ -65,21 +65,25 @@ class MoondreamProcessor:
         print(f"💾 Saved image to: {filepath}")
         return filename
     
-    async def analyze_food(self, image_data: bytes) -> Dict[str, Any]:
+    async def analyze_food(self, image_data: bytes, custom_prompt: Optional[str] = None) -> Dict[str, Any]:
         """
         Analyze food items in the image using Moondream AI
         
         Args:
             image_data: JPEG image bytes from the glasses
+            custom_prompt: Optional custom prompt for analysis (defaults to food analysis)
             
         Returns:
-            Structured food analysis data with restaurant recommendations
+            Structured analysis data with restaurant recommendations
         """
         # Save image to static directory
         filename = self._save_image_to_static(image_data)
         
-        # Food analysis question
-        question = "What food is shown in this image? Please identify the main food item and describe what you see."
+        # Use custom prompt or default to food analysis
+        if custom_prompt:
+            question = custom_prompt
+        else:
+            question = "What food is shown in this image? Please identify the main food item and describe what you see."
         
         # Define image URL early to avoid linter errors
         image_url = f"http://localhost:8000/static/images/{filename}"
@@ -132,7 +136,12 @@ class MoondreamProcessor:
             
             # Parse the AI response and structure it
             ai_response = result['choices'][0]['message']['content']
-            structured_data = self._parse_food_analysis(ai_response)
+            
+            # Use different parsing based on whether it's a custom prompt or food analysis
+            if custom_prompt:
+                structured_data = self._parse_general_analysis(ai_response, custom_prompt)
+            else:
+                structured_data = self._parse_food_analysis(ai_response)
             
             return {
                 "success": True,
@@ -142,7 +151,8 @@ class MoondreamProcessor:
                 "processing_time_ms": 0,  # TODO: Add timing
                 "timestamp": datetime.now().isoformat(),
                 "image_filename": filename,
-                "image_url": image_url
+                "image_url": image_url,
+                "custom_prompt": custom_prompt
             }
             
         except httpx.HTTPStatusError as e:
@@ -194,7 +204,12 @@ class MoondreamProcessor:
                 
                 # Parse the AI response and structure it
                 ai_response = result['choices'][0]['message']['content']
-                structured_data = self._parse_food_analysis(ai_response)
+                
+                # Use different parsing based on whether it's a custom prompt or food analysis
+                if custom_prompt:
+                    structured_data = self._parse_general_analysis(ai_response, custom_prompt)
+                else:
+                    structured_data = self._parse_food_analysis(ai_response)
                 
                 return {
                     "success": True,
@@ -204,7 +219,8 @@ class MoondreamProcessor:
                     "processing_time_ms": 0,
                     "timestamp": datetime.now().isoformat(),
                     "image_filename": filename,
-                    "image_url": image_url
+                    "image_url": image_url,
+                    "custom_prompt": custom_prompt
                 }
                 
             except httpx.HTTPStatusError as e2:
@@ -215,9 +231,12 @@ class MoondreamProcessor:
                 print("Using mock data for testing...")
                 
                 # Try to provide more realistic fallback based on image characteristics
-                # For now, we'll use a generic but realistic food response
-                mock_response = "This appears to be a delicious food item. The image shows a well-prepared dish that looks appetizing. The main food item appears to be a fresh, colorful meal."
-                structured_data = self._parse_food_analysis(mock_response)
+                if custom_prompt:
+                    mock_response = f"Analysis of the image based on your prompt: '{custom_prompt}'. The image appears to contain relevant information that matches your query."
+                    structured_data = self._parse_general_analysis(mock_response, custom_prompt)
+                else:
+                    mock_response = "This appears to be a delicious food item. The image shows a well-prepared dish that looks appetizing. The main food item appears to be a fresh, colorful meal."
+                    structured_data = self._parse_food_analysis(mock_response)
                 
                 return {
                     "success": True,
@@ -227,7 +246,8 @@ class MoondreamProcessor:
                     "processing_time_ms": 0,
                     "timestamp": datetime.now().isoformat(),
                     "image_filename": filename,
-                    "image_url": image_url
+                    "image_url": image_url,
+                    "custom_prompt": custom_prompt
                 }
                 
         except Exception as e:
@@ -238,7 +258,8 @@ class MoondreamProcessor:
                 "error": str(e),
                 "timestamp": datetime.now().isoformat(),
                 "image_filename": filename,
-                "image_url": image_url
+                "image_url": image_url,
+                "custom_prompt": custom_prompt
             }
     
     async def general_analysis(self, image_data: bytes, custom_prompt: str) -> Dict[str, Any]:
@@ -301,80 +322,69 @@ class MoondreamProcessor:
     
     def _parse_food_analysis(self, ai_response: str) -> Dict[str, Any]:
         """
-        Parse the AI response into structured food data
-        
-        Args:
-            ai_response: Raw AI response text
-            
-        Returns:
-            Structured food data
+        Parse AI response for food analysis into structured data
         """
-        # Enhanced parsing logic
-        food_items = []
-        total_calories = 0
-        dietary_restrictions = []
+        # Extract key information from AI response
         primary_food_item = "unknown"
+        description = ai_response
         
-        # Extract primary food item
-        primary_patterns = [
-            r"primary food item[:\s]+([^\n]+)",
-            r"main food item[:\s]+([^\n]+)",
-            r"food item[:\s]+([^\n]+)",
-            r"([a-zA-Z]+)\s+(pizza|sushi|burger|pasta|taco|salad|sandwich|steak|chicken|fish)"
-        ]
-        
-        for pattern in primary_patterns:
-            match = re.search(pattern, ai_response.lower())
-            if match:
-                primary_food_item = match.group(1).strip()
+        # Try to extract food item from response
+        food_keywords = ["pizza", "burger", "sushi", "pasta", "salad", "steak", "chicken", "fish", "rice", "bread"]
+        for keyword in food_keywords:
+            if keyword.lower() in ai_response.lower():
+                primary_food_item = keyword
                 break
         
-        # If no pattern match, try to extract from the first few lines
+        # If no specific food found, try to extract from common patterns
         if primary_food_item == "unknown":
-            lines = ai_response.split('\n')
-            for line in lines[:5]:  # Check first 5 lines
-                line = line.strip().lower()
-                if any(food in line for food in ["pizza", "sushi", "burger", "pasta", "taco", "salad", "sandwich", "steak", "chicken", "fish"]):
-                    # Extract the food word
-                    for food in ["pizza", "sushi", "burger", "pasta", "taco", "salad", "sandwich", "steak", "chicken", "fish"]:
-                        if food in line:
-                            primary_food_item = food
-                            break
-                    break
-        
-        # Extract calories
-        calorie_pattern = r"(\d+)\s*calories?"
-        calorie_match = re.search(calorie_pattern, ai_response.lower())
-        if calorie_match:
-            total_calories = int(calorie_match.group(1))
-        
-        # Extract dietary restrictions
-        restriction_keywords = ["gluten", "dairy", "nuts", "vegetarian", "vegan", "halal", "kosher"]
-        for keyword in restriction_keywords:
-            if keyword in ai_response.lower():
-                dietary_restrictions.append(keyword)
-        
-        # Create food item entry
-        if primary_food_item != "unknown":
-            food_items.append({
-                "name": primary_food_item,
-                "confidence": 0.9,
-                "calories": total_calories if total_calories > 0 else None,
-                "nutrients": {
-                    "protein": "varies",
-                    "carbs": "varies", 
-                    "fat": "varies",
-                    "fiber": "varies"
-                }
-            })
+            # Look for "main food item" or similar patterns
+            import re
+            main_food_pattern = r"main food item.*?is\s+([a-zA-Z\s]+)"
+            match = re.search(main_food_pattern, ai_response, re.IGNORECASE)
+            if match:
+                primary_food_item = match.group(1).strip()
         
         return {
-            "food_items": food_items,
-            "total_calories": total_calories,
-            "dietary_restrictions": dietary_restrictions,
+            "raw_analysis": ai_response,
             "primary_food_item": primary_food_item,
-            "raw_analysis": ai_response
-        } 
+            "description": description,
+            "confidence": 0.8,  # Mock confidence
+            "analysis_type": "food_analysis"
+        }
+    
+    def _parse_general_analysis(self, ai_response: str, custom_prompt: str) -> Dict[str, Any]:
+        """
+        Parse AI response for general analysis with custom prompt into structured data
+        """
+        # Extract key information from AI response
+        description = ai_response
+        
+        # Try to identify the type of analysis based on the prompt
+        analysis_type = "general_analysis"
+        
+        # Check if it's text reading/OCR
+        text_keywords = ["read", "text", "sign", "menu", "label", "ocr", "extract text"]
+        if any(keyword in custom_prompt.lower() for keyword in text_keywords):
+            analysis_type = "text_reading"
+        
+        # Check if it's navigation/direction
+        nav_keywords = ["direction", "navigation", "street", "address", "location", "where"]
+        if any(keyword in custom_prompt.lower() for keyword in nav_keywords):
+            analysis_type = "navigation"
+        
+        # Check if it's object detection
+        obj_keywords = ["object", "item", "thing", "what is", "identify"]
+        if any(keyword in custom_prompt.lower() for keyword in obj_keywords):
+            analysis_type = "object_detection"
+        
+        return {
+            "raw_analysis": ai_response,
+            "custom_prompt": custom_prompt,
+            "description": description,
+            "confidence": 0.8,  # Mock confidence
+            "analysis_type": analysis_type,
+            "primary_food_item": "unknown"  # Keep for compatibility
+        }
     
     async def close(self):
         """Close the HTTP client"""
