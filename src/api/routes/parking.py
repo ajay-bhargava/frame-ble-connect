@@ -1,12 +1,11 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+# pylint: disable=import-error
+from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
 import time
 from datetime import datetime
-from typing import Optional
 
-from src.ai.processors.moondream_processor import MoondreamProcessor
-from src.api.services.parking_service import ParkingService
-from src.api.models.responses import AnalysisResult
+from src.ai.processors.moondream_processor import MoondreamProcessor  # pylint: disable=import-error
+from src.api.services.parking_service import ParkingService  # pylint: disable=import-error
 
 router = APIRouter(prefix="/parking", tags=["parking"])
 
@@ -58,11 +57,10 @@ Format your response as: "Text found: [list all text content separated by commas
 Be thorough and include every piece of text you can read."""
         
         # Perform text extraction
-        text_result = await moondream_processor._perform_analysis(
+        text_result = await moondream_processor.extract_text_from_image(
             image_data, 
-            parking_sign_prompt, 
-            filename
-        ) # type: ignore
+            parking_sign_prompt
+        )
         
         if not text_result.get("success"):
             raise HTTPException(
@@ -71,7 +69,7 @@ Be thorough and include every piece of text you can read."""
             )
         
         # Extract the OCR text
-        ocr_text = text_result.get("raw_response", "")
+        ocr_text = text_result.get("response", "")
         if not ocr_text:
             raise HTTPException(status_code=500, detail="No text extracted from image")
         
@@ -100,9 +98,7 @@ Be thorough and include every piece of text you can read."""
         
         return JSONResponse(content=response_data)
         
-    except HTTPException:
-        raise
-    except Exception as e:
+    except (ValueError, OSError, RuntimeError) as e:  # pylint: disable=broad-except
         processing_time_ms = (time.time() - start_time) * 1000
         return JSONResponse(
             status_code=500,
@@ -122,7 +118,7 @@ async def get_parking_info_by_zone(zone_number: str):
     try:
         result = await parking_service.get_parking_info_by_zone(zone_number)
         return JSONResponse(content=result)
-    except Exception as e:
+    except (ValueError, OSError, RuntimeError) as e:  # pylint: disable=broad-except
         return JSONResponse(
             status_code=500,
             content={
@@ -139,7 +135,7 @@ async def get_parking_info_by_street(street_name: str):
     try:
         result = await parking_service.get_parking_info_by_street(street_name)
         return JSONResponse(content=result)
-    except Exception as e:
+    except (ValueError, OSError, RuntimeError) as e:  # pylint: disable=broad-except
         return JSONResponse(
             status_code=500,
             content={
@@ -181,24 +177,23 @@ async def extract_text_from_sign(
 Format your response as: "Text found: [list all text content separated by commas]"
 Be thorough and include every piece of text you can read."""
         
-        result = await moondream_processor._perform_analysis(
+        result = await moondream_processor.extract_text_from_image(
             image_data, 
-            parking_sign_prompt, 
-            filename
-        ) # type: ignore
+            parking_sign_prompt
+        )
         
         processing_time_ms = (time.time() - start_time) * 1000
         
         return JSONResponse(content={
             "success": result.get("success", False),
-            "ocr_text": result.get("raw_response", ""),
+            "ocr_text": result.get("response", ""),
             "processing_time_ms": processing_time_ms,
             "timestamp": datetime.now().isoformat(),
             "image_filename": filename,
             "image_url": f"http://localhost:8000/static/images/{filename}"
         })
         
-    except Exception as e:
+    except (ValueError, OSError, RuntimeError) as e:  # pylint: disable=broad-except
         processing_time_ms = (time.time() - start_time) * 1000
         return JSONResponse(
             status_code=500,
@@ -228,11 +223,11 @@ async def get_violations_by_zone(zone_number: str):
         Complete analysis with zone info, address, and violation count
     """
     try:
-        parking_service = ParkingService()
-        result = await parking_service.get_violations_by_zone(zone_number)
-        await parking_service.close()
+        local_parking_service = ParkingService()
+        result = await local_parking_service.get_violations_by_zone(zone_number)
+        await local_parking_service.close()
         return result
-    except Exception as e:
+    except (ValueError, OSError, RuntimeError) as e:  # pylint: disable=broad-except
         return {
             "success": False,
             "error": f"Failed to get violations by zone: {str(e)}",
@@ -254,11 +249,11 @@ async def get_violations_by_street(street_name: str):
         Violation count and metadata
     """
     try:
-        parking_service = ParkingService()
-        result = await parking_service.get_violation_count_by_street(street_name)
-        await parking_service.close()
+        local_parking_service = ParkingService()
+        result = await local_parking_service.get_violation_count_by_street(street_name)
+        await local_parking_service.close()
         return result
-    except Exception as e:
+    except (ValueError, OSError, RuntimeError) as e:  # pylint: disable=broad-except
         return {
             "success": False,
             "error": f"Failed to get violations by street: {str(e)}",
@@ -285,11 +280,11 @@ async def get_violation_count_by_zone(zone_number: str):
         Simplified response with zone number, street name, and violation count
     """
     try:
-        parking_service = ParkingService()
-        result = await parking_service.get_violation_count_by_zone(zone_number)
-        await parking_service.close()
+        local_parking_service = ParkingService()
+        result = await local_parking_service.get_violation_count_by_zone(zone_number)
+        await local_parking_service.close()
         return result
-    except Exception as e:
+    except (ValueError, OSError, RuntimeError) as e:  # pylint: disable=broad-except
         return {
             "success": False,
             "error": f"Failed to get violation count by zone: {str(e)}",

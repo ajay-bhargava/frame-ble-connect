@@ -17,6 +17,7 @@ async def connect_haptic_detector():
     global _haptic_detector
     
     try:
+        # Initialize the haptic detector and let it establish its own connection
         _haptic_detector = HapticDetector()
         result = await _haptic_detector.connect_to_glasses()
         
@@ -26,6 +27,7 @@ async def connect_haptic_detector():
         return {
             "success": True,
             "message": "Connected to Frame glasses with haptic detector",
+            "battery_memory": result.get("battery_memory"),
             "timestamp": result.get("timestamp")
         }
         

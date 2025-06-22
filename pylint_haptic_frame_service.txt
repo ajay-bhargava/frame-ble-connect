@@ -1,0 +1,19 @@
+************* Module api.services.haptic_frame_service
+src/api/services/haptic_frame_service.py:6:0: E0401: Unable to import 'src.api.services.parking_service' (import-error)
+src/api/services/haptic_frame_service.py:7:0: E0401: Unable to import 'src.api.services.frame_service' (import-error)
+src/api/services/haptic_frame_service.py:8:0: E0401: Unable to import 'src.connect.haptic_detector' (import-error)
+src/api/services/haptic_frame_service.py:47:15: W0718: Catching too general exception Exception (broad-exception-caught)
+src/api/services/haptic_frame_service.py:83:15: W0718: Catching too general exception Exception (broad-exception-caught)
+src/api/services/haptic_frame_service.py:112:15: W0718: Catching too general exception Exception (broad-exception-caught)
+src/api/services/haptic_frame_service.py:166:15: W0718: Catching too general exception Exception (broad-exception-caught)
+src/api/services/haptic_frame_service.py:205:15: W0718: Catching too general exception Exception (broad-exception-caught)
+src/api/services/haptic_frame_service.py:185:12: W0612: Unused variable 'image_b64' (unused-variable)
+src/api/services/haptic_frame_service.py:244:15: W0718: Catching too general exception Exception (broad-exception-caught)
+src/api/services/haptic_frame_service.py:298:15: W0718: Catching too general exception Exception (broad-exception-caught)
+src/api/services/haptic_frame_service.py:328:15: W0718: Catching too general exception Exception (broad-exception-caught)
+src/api/services/haptic_frame_service.py:333:12: W0702: No exception type(s) specified (bare-except)
+src/api/services/haptic_frame_service.py:2:0: W0611: Unused import time (unused-import)
+
+-----------------------------------
+Your code has been rated at 7.82/10
+

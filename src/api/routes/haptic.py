@@ -165,7 +165,9 @@ async def capture_image_manual(request: CaptureRequest):
         if not _haptic_service:
             raise HTTPException(status_code=400, detail="Not connected to Frame glasses")
         
-        result = await _haptic_service.capture_image(request.resolution)
+        # Use default resolution if none provided
+        resolution = request.resolution if request.resolution is not None else 720
+        result = await _haptic_service.capture_image(resolution)
         
         if not result["success"]:
             raise HTTPException(status_code=500, detail=result["error"])
@@ -214,23 +216,44 @@ async def process_haptic_capture_with_analysis():
     try:
         if not _haptic_service:
             raise HTTPException(status_code=400, detail="Not connected to Frame glasses")
+        
         # Simulate image capture (in real implementation, this would come from the glasses)
         with open("captured_frame.jpg", "rb") as f:
             image_data = f.read()
-        # Process the capture with analysis
-        result = await _haptic_service.process_haptic_capture(image_data, "touch")
-        if not result["success"]:
-            raise HTTPException(status_code=500, detail=result["error"])
-        return {
-            "success": True,
-            "message": "Haptic capture processed successfully",
-            "trigger_type": result["trigger_type"],
-            "image_size_bytes": result["image_size_bytes"],
-            "analysis": result.get("analysis"),
-            "violation_check": result.get("violation_check"),
-            "feedback_message": result.get("feedback_message"),
-            "timestamp": result["timestamp"]
-        }
+        
+        # Process the capture with analysis using the haptic detector
+        if hasattr(_haptic_service, 'haptic_detector') and _haptic_service.haptic_detector:
+            # Use the haptic detector's capture method
+            capture_result = await _haptic_service.haptic_detector._capture_photo()
+            
+            if capture_result.get("success"):
+                # Get violation count
+                violation_count = await _haptic_service.haptic_detector._get_violation_count()
+                
+                # Generate feedback message
+                feedback_message = "Foggetaboutit" if violation_count > 20 else "Don't worry about it"
+                
+                # Send feedback to glasses
+                if _haptic_service.haptic_detector.frame:
+                    await _haptic_service.haptic_detector.frame.send_lua(
+                        f'frame.display.text("{feedback_message}", 1, 1); frame.display.show()',
+                        await_print=True
+                    )
+                
+                return {
+                    "success": True,
+                    "message": "Haptic capture processed successfully",
+                    "trigger_type": "touch",
+                    "image_size_bytes": capture_result.get("image_size_bytes", 0),
+                    "violation_count": violation_count,
+                    "feedback_message": feedback_message,
+                    "timestamp": capture_result.get("timestamp")
+                }
+            else:
+                raise HTTPException(status_code=500, detail="Failed to capture photo")
+        else:
+            raise HTTPException(status_code=500, detail="Haptic detector not available")
+            
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process haptic capture: {str(e)}")
 
