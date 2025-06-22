@@ -100,9 +100,15 @@ def main():
                 print(f"⚠️  Violations Count: {violation_count}")
                 print(f"🛣️  Street: {street_name}")
                 
-                # Send violations count to glasses
-                print("📱 Sending violations count to Frame glasses...")
-                asyncio.run(send_to_glasses(f"Zone {zone_number}: {violation_count} violations"))
+                # Generate display text based on violation count
+                if violation_count > 20:
+                    display_text = f'{violation_count} tickets. Fuggedaboudit'
+                else:
+                    display_text = f'{violation_count} tickets. Dontworryaboutit.'
+                
+                # Send display text to glasses
+                print("📱 Sending display text to Frame glasses...")
+                asyncio.run(send_to_glasses(display_text))
             else:
                 print("❌ Could not get violation count")
                 asyncio.run(send_to_glasses(f"Zone {zone_number}: No data"))
