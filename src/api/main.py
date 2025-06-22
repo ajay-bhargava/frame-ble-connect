@@ -8,7 +8,7 @@ import sys
 from dotenv import load_dotenv
 from pathlib import Path
 
-from .routes import analysis, device, parking
+from .routes import analysis, device, parking, haptic_test
 
 # Load environment variables
 load_dotenv()
@@ -41,6 +41,7 @@ if static_dir.exists():
 app.include_router(analysis.router, prefix="/api/v1")
 app.include_router(device.router, prefix="/api/v1")
 app.include_router(parking.router, prefix="/api/v1")
+app.include_router(haptic_test.router, prefix="/api/v1")
 
 @app.get("/")
 async def root():
