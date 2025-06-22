@@ -193,7 +193,7 @@ async def capture_and_analyze_food(
     """
     try:
         # Import here to avoid circular imports
-        from src.api.services.frame_service import FrameService
+        from api.services.frame_msg_service import FrameService
         
         frame_service = FrameService()
         
@@ -253,7 +253,7 @@ async def capture_and_find_restaurant(
     """
     try:
         # Import services
-        from src.api.services.frame_service import FrameService
+        from api.services.frame_msg_service import FrameService
         from src.api.services.restaurant_service import RestaurantService
         
         frame_service = FrameService()

@@ -12,7 +12,7 @@ async def get_device_status():
     Get current Frame glasses device status
     """
     try:
-        from src.api.services.frame_service import FrameService
+        from api.services.frame_msg_service import FrameService
         
         frame_service = FrameService()
         status = await frame_service.get_status()
@@ -28,7 +28,7 @@ async def connect_device():
     Connect to Frame glasses
     """
     try:
-        from src.api.services.frame_service import FrameService
+        from api.services.frame_msg_service import FrameService
         
         frame_service = FrameService()
         result = await frame_service.connect()
@@ -51,7 +51,7 @@ async def disconnect_device():
     Disconnect from Frame glasses
     """
     try:
-        from src.api.services.frame_service import FrameService
+        from api.services.frame_msg_service import FrameService
         
         frame_service = FrameService()
         await frame_service.disconnect()
@@ -70,7 +70,7 @@ async def capture_image(request: CaptureRequest):
     Capture an image from Frame glasses
     """
     try:
-        from src.api.services.frame_service import FrameService
+        from api.services.frame_msg_service import FrameService
         
         frame_service = FrameService()
         
@@ -80,6 +80,9 @@ async def capture_image(request: CaptureRequest):
             raise HTTPException(status_code=500, detail=connect_result["error"])
         
         try:
+            if request.resolution is None:
+                raise HTTPException(status_code=400, detail="request['resolution'] is required")
+
             # Capture image
             result = await frame_service.capture_image(request.resolution)
             
@@ -106,7 +109,7 @@ async def display_text(text: str):
     Display text on Frame glasses
     """
     try:
-        from src.api.services.frame_service import FrameService
+        from api.services.frame_msg_service import FrameService
         
         frame_service = FrameService()
         
