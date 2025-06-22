@@ -17,7 +17,7 @@ import sys
 from datetime import datetime
 from typing import Dict, Any
 
-from src.connect.haptic_detector import HapticDetector
+from haptic_detector import HapticDetector
 
 class HapticTestRunner:
     def __init__(self):

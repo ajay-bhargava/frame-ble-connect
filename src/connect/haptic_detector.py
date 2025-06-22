@@ -4,9 +4,13 @@ import math
 from typing import Dict, Any, Optional, Callable
 from datetime import datetime
 
+# Import Frame glasses libraries
+from frame_ble import FrameBle
+from frame_msg import FrameMsg, RxPhoto, TxCaptureSettings
+
 class HapticDetector:
     """
-    Light tap detection service for Frame glasses using accelerometer
+    Light tap detection service for Frame glasses using real accelerometer data
     """
     
     def __init__(self):
@@ -25,8 +29,10 @@ class HapticDetector:
         self.last_accel = {'x': 0, 'y': 0, 'z': 0}
         self.last_gyro = {'x': 0, 'y': 0, 'z': 0}
         
-        # Frame glasses connection (placeholder - will integrate with actual BLE)
-        self.frame_connection = None
+        # Frame glasses connection
+        self.frame = None
+        self.rx_photo = None
+        self.photo_queue = None
         
     async def connect_to_glasses(self) -> Dict[str, Any]:
         """
@@ -36,16 +42,47 @@ class HapticDetector:
             Connection result
         """
         try:
-            # TODO: Implement actual BLE connection to Frame glasses
-            # For now, simulate connection
             print("🔗 Connecting to Frame glasses...")
-            await asyncio.sleep(1)  # Simulate connection time
+            
+            # Initialize Frame connection
+            self.frame = FrameMsg()
+            await self.frame.connect()
+            
+            # Check battery and memory
+            batt_mem = await self.frame.send_lua(
+                'print(frame.battery_level() .. " / " .. collectgarbage("count"))', 
+                await_print=True
+            )
+            print(f"Battery Level/Memory used: {batt_mem}")
+            
+            # Upload required libraries
+            await self.frame.upload_stdlua_libs(lib_names=['data', 'camera'])
+            
+            # Upload haptic camera app
+            import os
+            lua_file_path = os.path.join(os.path.dirname(__file__), "lua", "haptic_camera_app.lua")
+            await self.frame.upload_frame_app(local_filename=lua_file_path)
+            
+            # Attach print response handler
+            self.frame.attach_print_response_handler()
+            
+            # Start the frame app
+            await self.frame.start_frame_app()
+            
+            # Set up photo receiver
+            self.rx_photo = RxPhoto()
+            self.photo_queue = await self.rx_photo.attach(self.frame)
+            
+            # Let autoexposure settle
+            print("Letting autoexposure settle...")
+            await asyncio.sleep(2.0)
             
             self.is_connected = True
             
             return {
                 "success": True,
                 "message": "Connected to Frame glasses",
+                "battery_memory": batt_mem,
                 "timestamp": datetime.now().isoformat()
             }
             
@@ -58,7 +95,7 @@ class HapticDetector:
     
     async def start_touch_monitoring(self, callback: Optional[Callable] = None) -> Dict[str, Any]:
         """
-        Start monitoring for light tap events
+        Start monitoring for light tap events using real accelerometer data
         
         Args:
             callback: Function to call when touch is detected
@@ -125,24 +162,24 @@ class HapticDetector:
     
     async def _monitor_accelerometer(self):
         """
-        Monitor accelerometer data for light tap detection
+        Monitor real accelerometer data for light tap detection
         """
         print("👁️  Monitoring accelerometer for light taps...")
         print("   Tap the temple area (side of glasses) to trigger capture")
         
         while self.is_monitoring:
             try:
-                # Get accelerometer and gyroscope data
-                accel_data = await self._get_accelerometer_data()
-                gyro_data = await self._get_gyroscope_data()
+                # Get real accelerometer and gyroscope data from Frame glasses
+                accel_data = await self._get_real_accelerometer_data()
+                gyro_data = await self._get_real_gyroscope_data()
                 
                 if accel_data and gyro_data:
                     # Check for light tap
                     if self._detect_light_tap(accel_data, gyro_data):
                         await self._handle_touch_detected()
                 
-                # Poll at 100Hz for responsive detection
-                await asyncio.sleep(0.01)
+                # Poll at 50Hz for responsive detection (slower than simulated to avoid overwhelming the glasses)
+                await asyncio.sleep(0.02)
                 
             except asyncio.CancelledError:
                 break
@@ -150,59 +187,67 @@ class HapticDetector:
                 print(f"Error in accelerometer monitoring: {e}")
                 await asyncio.sleep(0.1)
     
-    async def _get_accelerometer_data(self) -> Optional[Dict[str, float]]:
+    async def _get_real_accelerometer_data(self) -> Optional[Dict[str, float]]:
         """
-        Get accelerometer data from Frame glasses
+        Get real accelerometer data from Frame glasses
         
         Returns:
             Accelerometer data or None if not available
         """
         try:
-            # TODO: Implement actual accelerometer reading from Frame glasses
-            # For now, simulate data for testing
+            # Get accelerometer data from Frame glasses
+            accel_result = await self.frame.send_lua(
+                'local accel = frame.imu.accelerometer(); if accel then print(accel.x .. "," .. accel.y .. "," .. accel.z) else print("none") end',
+                await_print=True
+            )
             
-            # Simulate normal accelerometer data with occasional "taps"
-            import random
+            if accel_result and accel_result != "none":
+                # Parse the accelerometer data
+                try:
+                    x, y, z = map(float, accel_result.split(','))
+                    return {
+                        'x': x,
+                        'y': y,
+                        'z': z,
+                        'timestamp': time.time()
+                    }
+                except ValueError:
+                    return None
             
-            # Simulate normal movement
-            base_x = 9.8 + random.uniform(-0.1, 0.1)  # Gravity + small variation
-            base_y = random.uniform(-0.05, 0.05)
-            base_z = random.uniform(-0.05, 0.05)
-            
-            # Occasionally simulate a light tap (for testing)
-            if random.random() < 0.001:  # 0.1% chance per reading
-                base_x += random.uniform(1.0, 2.0)  # Simulate tap
-            
-            return {
-                'x': base_x,
-                'y': base_y,
-                'z': base_z,
-                'timestamp': time.time()
-            }
+            return None
             
         except Exception as e:
             print(f"Error reading accelerometer: {e}")
             return None
     
-    async def _get_gyroscope_data(self) -> Optional[Dict[str, float]]:
+    async def _get_real_gyroscope_data(self) -> Optional[Dict[str, float]]:
         """
-        Get gyroscope data from Frame glasses
+        Get real gyroscope data from Frame glasses
         
         Returns:
             Gyroscope data or None if not available
         """
         try:
-            # TODO: Implement actual gyroscope reading from Frame glasses
-            # For now, simulate data for testing
+            # Get gyroscope data from Frame glasses
+            gyro_result = await self.frame.send_lua(
+                'local gyro = frame.imu.gyroscope(); if gyro then print(gyro.x .. "," .. gyro.y .. "," .. gyro.z) else print("none") end',
+                await_print=True
+            )
             
-            import random
+            if gyro_result and gyro_result != "none":
+                # Parse the gyroscope data
+                try:
+                    x, y, z = map(float, gyro_result.split(','))
+                    return {
+                        'x': x,
+                        'y': y,
+                        'z': z,
+                        'timestamp': time.time()
+                    }
+                except ValueError:
+                    return None
             
-            return {
-                'x': random.uniform(-0.1, 0.1),
-                'y': random.uniform(-0.1, 0.1),
-                'z': random.uniform(-0.1, 0.1),
-                'timestamp': time.time()
-            }
+            return None
             
         except Exception as e:
             print(f"Error reading gyroscope: {e}")
@@ -210,7 +255,7 @@ class HapticDetector:
     
     def _detect_light_tap(self, accel_data: Dict[str, float], gyro_data: Dict[str, float]) -> bool:
         """
-        Detect light tap using accelerometer and gyroscope data
+        Detect light tap using real accelerometer and gyroscope data
         
         Args:
             accel_data: Current accelerometer readings
@@ -265,7 +310,7 @@ class HapticDetector:
     
     async def _handle_touch_detected(self):
         """
-        Handle detected light tap event
+        Handle detected light tap event - capture photo and get violation count
         """
         try:
             print("🎯 Light tap detected! Triggering photo capture...")
@@ -304,15 +349,17 @@ class HapticDetector:
             Capture result
         """
         try:
-            # TODO: Implement actual photo capture from Frame glasses
-            # For now, simulate capture
+            # Request photo capture
+            await self.frame.send_message(0x0d, TxCaptureSettings(resolution=720).pack())
             
-            await asyncio.sleep(0.1)  # Simulate capture time
+            # Wait for photo data
+            jpeg_bytes = await asyncio.wait_for(self.photo_queue.get(), timeout=10.0)
             
             return {
                 "success": True,
-                "image_size_bytes": 102400,  # 100KB simulated
+                "image_size_bytes": len(jpeg_bytes),
                 "resolution": "720p",
+                "jpeg_data": jpeg_bytes,
                 "timestamp": datetime.now().isoformat()
             }
             
@@ -328,7 +375,7 @@ class HapticDetector:
         Get violation count for testing
         
         Returns:
-            Simulated violation count
+            Simulated violation count (will be replaced with real violation checking)
         """
         try:
             # TODO: Integrate with actual violation checking service
@@ -350,6 +397,16 @@ class HapticDetector:
         """
         try:
             await self.stop_touch_monitoring()
+            
+            # Clean up Frame connection
+            if self.rx_photo and self.frame:
+                self.rx_photo.detach(self.frame)
+            
+            if self.frame:
+                self.frame.detach_print_response_handler()
+                await self.frame.stop_frame_app()
+                await self.frame.disconnect()
+            
             self.is_connected = False
             
             return {
