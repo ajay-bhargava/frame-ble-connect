@@ -62,7 +62,7 @@ Be thorough and include every piece of text you can read."""
             image_data, 
             parking_sign_prompt, 
             filename
-        )
+        ) # type: ignore
         
         if not text_result.get("success"):
             raise HTTPException(
@@ -185,7 +185,7 @@ Be thorough and include every piece of text you can read."""
             image_data, 
             parking_sign_prompt, 
             filename
-        )
+        ) # type: ignore
         
         processing_time_ms = (time.time() - start_time) * 1000
         
