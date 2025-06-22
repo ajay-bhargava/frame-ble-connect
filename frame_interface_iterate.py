@@ -161,6 +161,16 @@ class FrameInterfaceTester:
             print(f"✗ Test failed: {e}")
             return False
             
+        finally:
+            # Ensure clean disconnection after test
+            try:
+                if self.interface.is_connected:
+                    print("🔌 Disconnecting from Frame glasses...")
+                    await self.interface.disconnect()
+                    print("✓ Disconnected successfully")
+            except Exception as disconnect_error:
+                print(f"⚠️  Disconnection warning: {disconnect_error}")
+            
     async def test_rapid_tap_handling(self) -> bool:
         """
         Test Case 2: Rapid Multiple Tap Handling
@@ -202,6 +212,11 @@ class FrameInterfaceTester:
                 
             self.interface.set_photo_callback(on_photo_captured)
             self.interface.set_tap_callback(on_tap_detected)
+            
+            # Connect to Frame
+            connection_result = await self.interface.connect()
+            if not connection_result["success"]:
+                raise Exception(f"Connection failed: {connection_result['error']}")
             
             # Display instruction
             await self.interface.display_text("Tap rapidly 3x")
@@ -246,6 +261,16 @@ class FrameInterfaceTester:
             print(f"✗ Test failed: {e}")
             return False
             
+        finally:
+            # Ensure clean disconnection after test
+            try:
+                if self.interface.is_connected:
+                    print("🔌 Disconnecting from Frame glasses...")
+                    await self.interface.disconnect()
+                    print("✓ Disconnected successfully")
+            except Exception as disconnect_error:
+                print(f"⚠️  Disconnection warning: {disconnect_error}")
+            
     async def test_tap_with_custom_settings(self) -> bool:
         """
         Test Case 3: Tap Capture with Custom Photo Settings
@@ -272,6 +297,7 @@ class FrameInterfaceTester:
         print("="*80)
         print(self.test_tap_with_custom_settings.__doc__)
         
+        custom_interface = None
         try:
             # Disconnect current interface and create one with custom settings
             await self.interface.stop()
@@ -338,16 +364,25 @@ class FrameInterfaceTester:
             print(f"✓ High-res test image saved: {image_path}")
             print(f"✓ Image size: {len(image_data)} bytes (should be larger than 720p captures)")
             
-            # Restore original interface
-            await custom_interface.stop()
-            self.interface = FrameInterface(capture_resolution=720, auto_exposure_delay=2.0)
-            
             return True
             
         except Exception as e:
             error_dict["test_tap_with_custom_settings"] = str(e)
             print(f"✗ Test failed: {e}")
             return False
+            
+        finally:
+            # Ensure clean disconnection after test
+            try:
+                if custom_interface and custom_interface.is_connected:
+                    print("🔌 Disconnecting custom interface from Frame glasses...")
+                    await custom_interface.disconnect()
+                    print("✓ Custom interface disconnected successfully")
+            except Exception as disconnect_error:
+                print(f"⚠️  Custom interface disconnection warning: {disconnect_error}")
+            
+            # Restore original interface
+            self.interface = FrameInterface(capture_resolution=720, auto_exposure_delay=2.0)
             
     async def test_basic_text_display(self) -> bool:
         """
@@ -420,6 +455,16 @@ class FrameInterfaceTester:
             print(f"✗ Test failed: {e}")
             return False
             
+        finally:
+            # Ensure clean disconnection after test
+            try:
+                if self.interface.is_connected:
+                    print("🔌 Disconnecting from Frame glasses...")
+                    await self.interface.disconnect()
+                    print("✓ Disconnected successfully")
+            except Exception as disconnect_error:
+                print(f"⚠️  Disconnection warning: {disconnect_error}")
+            
     async def test_text_positioning(self) -> bool:
         """
         Test Case 5: Text Display Positioning Control
@@ -486,6 +531,16 @@ class FrameInterfaceTester:
             error_dict["test_text_positioning"] = str(e)
             print(f"✗ Test failed: {e}")
             return False
+            
+        finally:
+            # Ensure clean disconnection after test
+            try:
+                if self.interface.is_connected:
+                    print("🔌 Disconnecting from Frame glasses...")
+                    await self.interface.disconnect()
+                    print("✓ Disconnected successfully")
+            except Exception as disconnect_error:
+                print(f"⚠️  Disconnection warning: {disconnect_error}")
             
     async def test_long_text_truncation(self) -> bool:
         """
@@ -558,6 +613,16 @@ class FrameInterfaceTester:
             error_dict["test_long_text_truncation"] = str(e)
             print(f"✗ Test failed: {e}")
             return False
+            
+        finally:
+            # Ensure clean disconnection after test
+            try:
+                if self.interface.is_connected:
+                    print("🔌 Disconnecting from Frame glasses...")
+                    await self.interface.disconnect()
+                    print("✓ Disconnected successfully")
+            except Exception as disconnect_error:
+                print(f"⚠️  Disconnection warning: {disconnect_error}")
 
 def get_user_validation(test_name: str, test_description: Optional[str]) -> bool:
     """
@@ -632,6 +697,11 @@ Focus on:
 3. Text display functionality
 4. Proper async/await usage
 5. Frame SDK message handling
+
+Look at the following documentation for reference:
+ https://docs.brilliant.xyz/frame/frame-sdk-lua/
+ https://frame-ble-python.readthedocs.io/en/latest/api.html
+ https://frame-msg-python.readthedocs.io/en/latest/api.html
 
 Provide the corrected code sections with explanations.
 """
